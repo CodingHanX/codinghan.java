@@ -1,0 +1,170 @@
+import java.awt.Color;
+import java.awt.Graphics;
+import java.awt.event.MouseEvent;
+import java.awt.event.MouseMotionListener;
+import java.util.Timer;
+import java.util.TimerTask;
+
+import javax.swing.JFrame;
+import javax.swing.JOptionPane;
+import javax.swing.JPanel;
+
+/*
+ * 弹球小游戏
+ * 思路：
+ * 		1.创建一个窗口，面板，位置固定
+ * 		2.再窗口上画一个球
+ * 		3.让小球自己动
+ * 		4.对小球的运动方向进行判断，并进行方向处理，实现小球效果
+ * 		5.添加挡板，实现跟随鼠标来控制挡板移动
+ * 		6.判断小球接触到挡板，或者接触到边缘时候的处理
+ */
+public class Game extends JFrame implements MouseMotionListener {
+	// 设置窗口的宽高
+	private int fw = 1100;
+	private int fh = 610;
+	// 设置球的位置
+	private int bx = 0;
+	private int by = 0;
+	// 设置球的半径
+	private int b2r = 100;
+	// 设置球的方向
+	private String dirction = "right_down";// 初始方向右下
+	// 定时器，在指定的时间间隔内，反复出发指定窗口事件
+	private Timer timer = new Timer();
+	// 设置挡板
+	private int block_x = 200;
+	private int block_y = 580;
+	private int block_w = 1300;
+	private int block_h = 20;
+	// 设置球的速度以及分数
+	private int speed = 1;
+	private int score = 0;
+	//创建内部类的对象
+	private Inner inner=null;
+
+	public Game() {
+		// 窗口置顶永远在前
+		this.setAlwaysOnTop(true);
+		// 禁用此frame 边缘修饰
+		this.setUndecorated(true);
+		// 初始化容器
+		this.getContentPane().setBackground(Color.BLACK);
+		this.setTitle("桌面弹球");
+		this.setSize(fw, fh);
+		//添加面板
+		inner=new Inner();
+		this.add(inner);
+		this.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+		this.setLocationRelativeTo(null);
+		this.setResizable(false);
+		this.addMouseMotionListener(this);
+		this.setVisible(true);
+	}
+	//创建一个面板容器的内部类
+	class Inner extends JPanel{
+		//创建一个构造方法
+		public Inner(){
+			//控件 设置不透明
+			this.setOpaque(false);
+			//定时器的一个方法
+			timer.schedule(new TimerTask(){
+				//重写run方法，主要实现小球的移动
+				@Override
+				public void run() {
+					// 通过坐标的定时改变来实现小球的移动
+					if ("right_down".equalsIgnoreCase(dirction)) {//右下
+						bx+=speed;
+						by+=speed;
+					}
+					if ("right_up".equalsIgnoreCase(dirction)) {//右上
+						bx+=speed;
+						by-=speed;
+					}
+					if ("left_up".equalsIgnoreCase(dirction)) {//左上
+						bx-=speed;
+						by-=speed;
+					}
+					if ("left_down".equalsIgnoreCase(dirction)) {//左下
+						bx-=speed;
+						by+=speed;
+					}
+					//判断游戏失败的时候
+					if (by+b2r>=fh) {
+						JOptionPane.showMessageDialog(inner, "游戏结束(GAME_OVER)","提示信息:",JOptionPane.DEFAULT_OPTION);
+						Runtime.getRuntime().exit(0);//程序运行结束
+					}
+					//接触到顶部时
+					if (by<=0) {
+						if ("left_up".equalsIgnoreCase(dirction)) {
+							dirction="left_down";
+						}else{
+							dirction="right_down";
+						}
+					}
+					//接触到左边时
+					if (bx<=0) {
+						if ("left_down".equalsIgnoreCase(dirction)) {
+							dirction="right_down";
+						}else{
+							dirction="right_up";
+						}
+					}
+					//接触到右边时
+					if (bx+b2r>=fw) {
+						if ("right_up".equalsIgnoreCase(dirction)) {
+							dirction="left_up";
+						}else{
+							dirction="left_down";
+						}
+					}
+					//接触到下边时(挡板)
+					if (bx+b2r/2>=block_x&&bx+b2r/2<=block_x+block_w&&by+b2r>=block_y) {
+						if ("right_down".equalsIgnoreCase(dirction)) {
+							dirction="right_up";
+							speed++;
+							score++;
+						}else{
+							dirction="left_up";
+							speed++;
+							score++;
+						}
+					}
+					//重绘
+					Inner.this.repaint();
+				}
+			},0,10);
+		}
+		//画笔
+		@Override
+		public void paint(Graphics g) {
+			super.paint(g);
+			g.setColor(Color.WHITE);
+			g.fillOval(bx, by, b2r, b2r);
+			g.setColor(Color.BLUE);
+			g.fillRect(block_x, block_y, block_w, block_h);
+			g.setColor(Color.RED);
+			g.drawString("分数"+score, 20, 20);
+		}
+	}
+	@Override
+	public void mouseDragged(MouseEvent e) {
+		block_x=e.getX();
+		if (block_x<=0) {
+			block_x=0;
+		}
+		if (block_w+block_x>=fw) {
+			block_x=fw-block_w;
+		}
+		this.repaint();
+	}
+
+	@Override
+	public void mouseMoved(MouseEvent e) {
+
+	}
+
+	public static void main(String[] args) {
+		new Game();
+	}
+}
